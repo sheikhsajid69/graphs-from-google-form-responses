@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SurveyChartStudio - Accessible Print-Legible Survey Charts</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  
+  <!-- Libraries via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <style>
+    /* CSS CUSTOM PROPERTIES (Design System) */
+    :root {
+      --bg-app: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-header: rgba(255, 255, 255, 0.8);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #e0e7ff;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      --radius: 16px;
+      --radius-sm: 8px;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg-app: #0f172a;
+      --bg-card: #1e293b;
+      --bg-header: rgba(15, 23, 42, 0.8);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: #312e81;
+      --border: #334155;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* GLOBAL RESET & STYLES */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background-color: var(--bg-header);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: var(--transition);
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: var(--transition);
+      user-select: none;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--border);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--border);
+    }
+
+    .btn-icon {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    /* GRID LAYOUTS */
+    .container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      flex-grow: 1;
+    }
+
+    .grid-split {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    @media (min-width: 1024px) {
+      .grid-split {
+        grid-template-columns: 380px 1fr;
+      }
+    }
+
+    /* ACCORDION/CARDS */
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+    }
+
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* DROPZONE (Upload Container) */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background-color: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background-color: var(--accent-light);
+    }
+
+    .dropzone i {
+      font-size: 3rem;
+      color: var(--accent);
+      transition: var(--transition);
+    }
+
+    .dropzone:hover i {
+      transform: translateY(-5px);
+    }
+
+    /* SAMPLE BUTTONS CONTAINER */
+    .sample-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    /* DATA PREVIEW / EDIT SECTION */
+    .data-editor-section {
+      max-height: 70vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .question-edit-box {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .edit-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.75rem;
+    }
+
+    .edit-table th, .edit-table td {
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    .edit-table input {
+      width: 100%;
+      padding: 0.375rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      background-color: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    /* CHARTS CONTAINER */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .charts-grid {
+        grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+      }
+    }
+
+    .chart-card {
+      background-color: #ffffff; /* Charts always use high contrast white bg */
+      color: #0f172a; /* Near-black text */
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+    }
+
+    /* GRAYSCALE OVERLAY TOGGLE */
+    .grayscale-mode .chart-card {
+      filter: grayscale(100%);
+    }
+
+    .chart-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 0.75rem;
+    }
+
+    .chart-card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #0f172a;
+    }
+
+    .chart-card-subtitle {
+      font-size: 0.825rem;
+      color: #64748b;
+      margin-top: 0.25rem;
+    }
+
+    .chart-canvas-container {
+      position: relative;
+      width: 100%;
+      height: 320px;
+    }
+
+    /* ACCESSIBILITY REFERENCE LEGEND */
+    .chart-legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 0.75rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: #334155;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    /* CARD CONTROL TOOLBAR */
+    .chart-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: auto;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 0.75rem;
+    }
+
+    .chart-toolbar select {
+      padding: 0.375rem 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      background-color: white;
+      color: #0f172a;
+    }
+
+    .toolbar-buttons {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    /* LOADER overlay */
+    .ocr-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      gap: 1rem;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--accent);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: #10b981;
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-lg);
+      display: none;
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(100px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ALERT CONTAINER */
+    .alert-box {
+      border-left: 4px solid var(--accent);
+      background-color: var(--accent-light);
+      padding: 1rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      display: none;
+    }
+
+    .alert-box.warning {
+      border-left-color: #f59e0b;
+      background-color: rgba(245, 158, 11, 0.1);
+      color: #b45309;
+    }
+
+    /* HIDDEN CLASS */
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">
+        <i class="fa-solid fa-chart-pie"></i>
+      </div>
+      <div>
+        <span class="logo-text">SurveyChartStudio</span>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <!-- Dark/Light Theme -->
+      <button class="btn btn-secondary btn-icon" id="theme-toggle" title="Toggle Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      
+      <!-- Grayscale simulation -->
+      <button class="btn btn-secondary" id="grayscale-toggle" title="Toggle B&W Simulation">
+        <i class="fa-solid fa-print"></i>
+        <span>Grayscale Simulation</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <div class="container">
+    
+    <!-- TOP CONTROLS / DASHBOARD HEADER -->
+    <div class="card" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
+      <div>
+        <h1 class="card-title" style="margin-bottom: 0.25rem;">Dashboard Overview</h1>
+        <p style="color: var(--text-secondary); font-size: 0.875rem;">Upload files to instantly build accessible, photocopy-friendly chart packages.</p>
+      </div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <!-- Global label option -->
+        <select id="global-label-type" class="btn btn-secondary" style="padding: 0.625rem 1rem;">
+          <option value="both">Show Count & Percentage</option>
+          <option value="percent">Show Percentage Only</option>
+          <option value="count">Show Count Only</option>
+        </select>
+        <!-- Download All -->
+        <button class="btn btn-primary" id="download-all-btn">
+          <i class="fa-solid fa-download"></i>
+          <span>Download All PNGs</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div class="grid-split">
+      
+      <!-- LEFT SIDEBAR: UPLOADS & EDITING -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        
+        <!-- UPLOAD CARD -->
+        <div class="card">
+          <h2 class="card-title" style="margin-bottom: 1rem;">1. Import Data</h2>
+          
+          <div class="dropzone" id="dropzone">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <div>
+              <p style="font-weight: 600;">Drag & drop here</p>
+              <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Supports CSV, Excel, PDF, JSON, Image (OCR), or Clipboard Paste</p>
+            </div>
+            <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">Browse Files</button>
+            <input type="file" id="file-input" class="hidden" accept=".csv, .xlsx, .xls, .json, .tsv, .pdf, image/*">
+          </div>
+          
+          <div class="sample-container">
+            <button class="btn btn-secondary" id="sample-csv-btn" style="flex: 1; font-size: 0.75rem; padding: 0.5rem;">Load CSV Sample</button>
+            <button class="btn btn-secondary" id="sample-forms-btn" style="flex: 1; font-size: 0.75rem; padding: 0.5rem;">Load Forms Text</button>
+            <button class="btn btn-secondary" id="sample-ocr-btn" style="flex: 1; font-size: 0.75rem; padding: 0.5rem;">Run Sample OCR</button>
+          </div>
+        </div>
+        
+        <!-- DATA EDITOR CARD -->
+        <div class="card" id="editor-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 class="card-title" style="margin: 0;">2. Verify & Edit Data</h2>
+            <button class="btn btn-secondary" id="add-question-btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+              <i class="fa-solid fa-plus"></i> Add Question
+            </button>
+          </div>
+          
+          <div id="ocr-warning-box" class="alert-box warning"></div>
+          
+          <div class="data-editor-section" id="data-editor-section">
+            <p style="color: var(--text-secondary); font-size: 0.875rem; text-align: center; padding: 2rem 0;">No active survey data. Upload a file or load samples above to begin.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT SIDEBAR: DASHBOARD GRAPHICS -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        
+        <!-- DASHBOARD CONTAINER -->
+        <div class="charts-grid" id="dashboard-charts-grid">
+          <!-- Rendered chart cards go here -->
+          <div class="card" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; text-align: center;">
+            <i class="fa-solid fa-chart-line" style="font-size: 4rem; color: var(--border); margin-bottom: 1rem;"></i>
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; margin-bottom: 0.5rem;">Awaiting Survey Data</h3>
+            <p style="color: var(--text-secondary); max-width: 400px; font-size: 0.875rem;">Once data is uploaded and parsed, high-contrast monochrome charts will generate dynamically here.</p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- OCR LOADER OVERLAY -->
+  <div class="ocr-loader" id="ocr-loader">
+    <div class="spinner"></div>
+    <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 700;">Running Optical Character Recognition (OCR)...</h3>
+    <p style="font-size: 0.9rem; max-width: 300px; text-align: center;">Analyzing image structures, extracting labels and value pairs. First run might download ~10MB patterns.</p>
+  </div>
+
+  <!-- NOTIFICATION TOAST -->
+  <div class="notification" id="notification"></div>
+
+  <script>
+    // GLOBAL STATE
+    window.surveyState = [];
+    let activeCharts = {};
+    let grayscaleActive = false;
+
+    // PATTERN DESIGN DEFINITIONS
+    const colors = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#0ea5e9', '#8b5cf6', '#f97316', '#14b8a6'];
+    const grayColors = ['#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#475569', '#334155', '#1e293b', '#0f172a'];
+    const patterns = ['solid', 'diagonal_lines_45deg', 'back_diagonal_lines_135deg', 'cross_hatch', 'dots', 'dense_diagonal_lines', 'horizontal_lines', 'vertical_lines'];
+
+    // SETUP WORKER FOR PDF.JS
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // COLOR PATTERN ENGINE
+    function getPattern(type, index, color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 16;
+      canvas.height = 16;
+      const ctx = canvas.getContext('2d');
+      
+      // Draw background secondary color
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, 16, 16);
+      
+      // Draw monochrome high contrast patterns on top
+      ctx.strokeStyle = '#111111';
+      ctx.lineWidth = 1.5;
+      
+      if (type === 'diagonal_lines_45deg') {
+        ctx.beginPath();
+        ctx.moveTo(0, 16);
+        ctx.lineTo(16, 0);
+        ctx.stroke();
+      } else if (type === 'back_diagonal_lines_135deg') {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(16, 16);
+        ctx.stroke();
+      } else if (type === 'cross_hatch') {
+        ctx.beginPath();
+        ctx.moveTo(0, 8);
+        ctx.lineTo(16, 8);
+        ctx.moveTo(8, 0);
+        ctx.lineTo(8, 16);
+        ctx.stroke();
+      } else if (type === 'dots') {
+        ctx.fillStyle = '#111111';
+        ctx.beginPath();
+        ctx.arc(4, 4, 2, 0, 2 * Math.PI);
+        ctx.arc(12, 12, 2, 0, 2 * Math.PI);
+        ctx.fill();
+      } else if (type === 'dense_diagonal_lines') {
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, 8); ctx.lineTo(8, 0);
+        ctx.moveTo(0, 16); ctx.lineTo(16, 0);
+        ctx.moveTo(8, 16); ctx.lineTo(16, 8);
+        ctx.stroke();
+      } else if (type === 'horizontal_lines') {
+        ctx.beginPath();
+        ctx.moveTo(0, 4); ctx.lineTo(16, 4);
+        ctx.moveTo(0, 12); ctx.lineTo(16, 12);
+        ctx.stroke();
+      } else if (type === 'vertical_lines') {
+        ctx.beginPath();
+        ctx.moveTo(4, 0); ctx.lineTo(4, 16);
+        ctx.moveTo(12, 0); ctx.lineTo(12, 16);
+        ctx.stroke();
+      }
+      return ctx.createPattern(canvas, 'repeat');
+    }
+
+    // CHART.JS PLUGINS
+
+    // Leader Line Plugin for Pie / Donut
+    const grayscaleLeaderLinesPlugin = {
+      id: 'grayscaleLeaderLines',
+      afterDraw(chart) {
+        const { ctx } = chart;
+        const config = chart.config;
+        if (config.type !== 'pie' && config.type !== 'doughnut') return;
+        
+        const showType = chart.options.plugins?.grayscaleLeaderLines?.showType || 'both';
+        
+        ctx.save();
+        const dataset = chart.data.datasets[0];
+        if (!dataset || dataset.data.length === 0) return;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data) return;
+        
+        const total = dataset.data.reduce((sum, val) => sum + val, 0);
+        const leftSide = [];
+        const rightSide = [];
+        
+        meta.data.forEach((arc, i) => {
+          if (meta.data[i].hidden) return;
+          const midAngle = arc.startAngle + (arc.endAngle - arc.startAngle) / 2;
+          const x = arc.x;
+          const y = arc.y;
+          const outerRadius = arc.outerRadius;
+          
+          const startX = x + Math.cos(midAngle) * outerRadius;
+          const startY = y + Math.sin(midAngle) * outerRadius;
+          
+          const idealY = y + Math.sin(midAngle) * (outerRadius + 30);
+          const idealX = x + Math.cos(midAngle) * (outerRadius + 30);
+          
+          const label = chart.data.labels[i] || '';
+          const val = dataset.data[i];
+          const pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+          
+          let text = label;
+          if (showType === 'percent') {
+            text += ` (${pct})`;
+          } else if (showType === 'count') {
+            text += ` (${val})`;
+          } else {
+            text += ` (${val}, ${pct})`;
+          }
+          
+          const item = {
+            index: i,
+            midAngle,
+            startX,
+            startY,
+            idealX,
+            idealY,
+            currentY: idealY,
+            text,
+            outerRadius,
+            centerX: x,
+            centerY: y
+          };
+          
+          if (Math.cos(midAngle) >= 0) {
+            rightSide.push(item);
+          } else {
+            leftSide.push(item);
+          }
+        });
+        
+        // Sort by target Y coordinates
+        rightSide.sort((a, b) => a.idealY - b.idealY);
+        leftSide.sort((a, b) => a.idealY - b.idealY);
+        
+        const minSpacing = 20;
+        const chartHeight = chart.height;
+        
+        // Push apart overlapping label items
+        relaxY(rightSide, minSpacing, chartHeight);
+        relaxY(leftSide, minSpacing, chartHeight);
+        
+        // Render Line Connectors and Typography
+        ctx.font = '10px "Inter", sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#334155';
+        ctx.fillStyle = '#0f172a';
+        
+        rightSide.forEach(item => drawLabelAndLine(ctx, item, 'right'));
+        leftSide.forEach(item => drawLabelAndLine(ctx, item, 'left'));
+        ctx.restore();
+      }
+    };
+
+    function relaxY(items, minSpacing, maxVal) {
+      if (items.length === 0) return;
+      let adjusted = true;
+      let iterations = 0;
+      while (adjusted && iterations < 150) {
+        adjusted = false;
+        for (let i = 0; i < items.length - 1; i++) {
+          const cur = items[i];
+          const next = items[i + 1];
+          const diff = next.currentY - cur.currentY;
+          if (diff < minSpacing) {
+            const overlap = minSpacing - diff;
+            cur.currentY -= overlap / 2;
+            next.currentY += overlap / 2;
+            adjusted = true;
+          }
+        }
+        
+        if (items[0].currentY < 15) {
+          items[0].currentY = 15;
+          adjusted = true;
+        }
+        const lastIdx = items.length - 1;
+        if (items[lastIdx].currentY > maxVal - 15) {
+          items[lastIdx].currentY = maxVal - 15;
+          adjusted = true;
+        }
+        iterations++;
+      }
+    }
+
+    function drawLabelAndLine(ctx, item, side) {
+      const { startX, startY, currentY, text, centerX, centerY, outerRadius } = item;
+      
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      
+      const endX1 = side === 'right' ? centerX + (outerRadius + 15) : centerX - (outerRadius + 15);
+      ctx.lineTo(endX1, currentY);
+      
+      const endX2 = side === 'right' ? endX1 + 15 : endX1 - 15;
+      ctx.lineTo(endX2, currentY);
+      ctx.stroke();
+      
+      ctx.textAlign = side === 'right' ? 'left' : 'right';
+      const textX = side === 'right' ? endX2 + 4 : endX2 - 4;
+      ctx.fillText(text, textX, currentY);
+    }
+
+    // Bar Labels Plugin for Bar / Stacked Bar
+    const barLabelsPlugin = {
+      id: 'barLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        const config = chart.config;
+        if (config.type !== 'bar') return;
+        
+        const showType = chart.options.plugins?.barLabels?.showType || 'both';
+        
+        ctx.save();
+        ctx.font = '10px "Inter", sans-serif';
+        ctx.fillStyle = '#0f172a';
+        
+        const dataset = chart.data.datasets[0];
+        if (!dataset) return;
+        const meta = chart.getDatasetMeta(0);
+        const total = dataset.data.reduce((sum, val) => sum + val, 0);
+        
+        meta.data.forEach((bar, i) => {
+          const val = dataset.data[i];
+          const pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+          let text = '';
+          if (showType === 'percent') {
+            text = pct;
+          } else if (showType === 'count') {
+            text = val.toString();
+          } else {
+            text = `${val} (${pct})`;
+          }
+          
+          const isHorizontal = chart.options.indexAxis === 'y';
+          if (isHorizontal) {
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, bar.x + 6, bar.y);
+          } else {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(text, bar.x, bar.y - 6);
+          }
+        });
+        ctx.restore();
+      }
+    };
+
+    // Register Plugins
+    Chart.register(grayscaleLeaderLinesPlugin, barLabelsPlugin);
+
+    // DATA PARSING UTILITIES
+
+    // Sniff content type & routing
+    function handleFile(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      
+      if (ext === 'csv' || ext === 'tsv') {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const rawText = e.target.result;
+          const delimiter = ext === 'tsv' ? '\t' : ',';
+          const parsed = Papa.parse(rawText, { header: true, skipEmptyLines: true, delimiter });
+          processTabularData(parsed.data, file.name);
+        };
+        reader.readAsText(file);
+      } else if (ext === 'xlsx' || ext === 'xls') {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[firstSheetName];
+          const json = XLSX.utils.sheet_to_json(sheet);
+          processTabularData(json, file.name);
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (ext === 'json') {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            const json = JSON.parse(e.target.result);
+            processTabularData(json, file.name);
+          } catch(err) {
+            showError("Invalid JSON structure.");
+          }
+        };
+        reader.readAsText(file);
+      } else if (ext === 'pdf') {
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+          const arrayBuffer = e.target.result;
+          try {
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              const pageText = textContent.items.map(item => item.str).join(' ');
+              fullText += pageText + '\n';
+            }
+            processParsedText(fullText, file.name);
+          } catch (err) {
+            showError("Failed to parse text from PDF file.");
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          runOCR(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        showError("Unsupported file type. Please upload CSV, Excel, PDF, JSON or an image.");
+      }
+    }
+
+    // Process tabular sheets or CSV tables
+    function processTabularData(data, filename) {
+      if (!data || data.length === 0) {
+        showError("No data found in file.");
+        return;
+      }
+      
+      const headers = Object.keys(data[0]);
+      
+      // Heuristic: Is this table pre-summarized (Option / Category, Count / Frequency, Percentage)?
+      // If we have <= 3 columns and one is text and another is numbers, treat as pre-summarized.
+      let isPreSummarized = false;
+      let labelCol = '';
+      let valCol = '';
+      
+      if (headers.length <= 3) {
+        let textCols = [];
+        let numCols = [];
+        
+        headers.forEach(h => {
+          let isNumeric = true;
+          let hasNumber = false;
+          
+          for (let i = 0; i < Math.min(data.length, 10); i++) {
+            const val = String(data[i][h]).trim();
+            if (val !== '' && isNaN(val.replace(/[%$,]/g, ''))) {
+              isNumeric = false;
+              break;
+            }
+            if (val !== '') hasNumber = true;
+          }
+          if (isNumeric && hasNumber) {
+            numCols.push(h);
+          } else {
+            textCols.push(h);
+          }
+        });
+        
+        if (textCols.length === 1 && numCols.length >= 1) {
+          isPreSummarized = true;
+          labelCol = textCols[0];
+          valCol = numCols[0];
+        }
+      }
+      
+      const newQuestions = [];
+      
+      if (isPreSummarized) {
+        // Pre-summarized single chart
+        const options = [];
+        const counts = [];
+        data.forEach(row => {
+          const l = String(row[labelCol]).trim();
+          const rawV = String(row[valCol]).replace(/[%$,]/g, '');
+          const v = Math.round(parseFloat(rawV) || 0);
+          if (l) {
+            options.push(l);
+            counts.push(v);
+          }
+        });
+        
+        newQuestions.push({
+          id: generateId(),
+          questionText: filename.split('.')[0] || 'Survey Question',
+          totalResponses: counts.reduce((a, b) => a + b, 0),
+          options,
+          counts,
+          chartType: options.length > 8 ? 'bar_vertical' : 'pie',
+          visible: true
+        });
+      } else {
+        // Respondent-level data: each column represents a question
+        headers.forEach(header => {
+          // Count categories
+          const frequencies = {};
+          let total = 0;
+          let textOnly = true;
+          
+          data.forEach(row => {
+            const cell = String(row[header] || '').trim();
+            if (cell !== '') {
+              frequencies[cell] = (frequencies[cell] || 0) + 1;
+              total++;
+              if (isNaN(cell)) textOnly = true;
+            }
+          });
+          
+          const uniqueCount = Object.keys(frequencies).length;
+          
+          // Skip columns acting as identifiers or free text (mostly unique items)
+          if (uniqueCount === 0 || uniqueCount === total || (uniqueCount > 25 && textOnly)) {
+            return;
+          }
+          
+          // Sort categories by count desc
+          const sortedOptions = Object.keys(frequencies).sort((a, b) => frequencies[b] - frequencies[a]);
+          const counts = sortedOptions.map(opt => frequencies[opt]);
+          
+          newQuestions.push({
+            id: generateId(),
+            questionText: header,
+            totalResponses: total,
+            options: sortedOptions,
+            counts,
+            chartType: sortedOptions.length > 8 ? 'bar_vertical' : 'pie',
+            visible: true
+          });
+        });
+      }
+      
+      if (newQuestions.length > 0) {
+        addParsedQuestions(newQuestions);
+        showNotification(`Successfully parsed ${newQuestions.length} survey questions!`);
+      } else {
+        showError("Could not identify categorical survey columns. Check file format.");
+      }
+    }
+
+    // Heuristic scraper for Google Forms raw text copy-paste
+    function processParsedText(text, sourceName) {
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const questions = [];
+      const pctRegex = /(\d+(?:\.\d+)?)\s*%/;
+      const countRegex = /\b(\d+[\d,]*)\b/;
+      
+      const questionStartIndices = [];
+      for (let i = 0; i < lines.length; i++) {
+        if (/\b\d+[\d,]*\s+(?:responses|answers|votes)\b/i.test(lines[i])) {
+          questionStartIndices.push(i);
+        }
+      }
+      
+      for (let k = 0; k < questionStartIndices.length; k++) {
+        const respIdx = questionStartIndices[k];
+        const title = lines[respIdx - 1] || `Question ${k + 1}`;
+        const totalMatch = lines[respIdx].match(/\b(\d+[\d,]*)\b/);
+        const totalResponses = totalMatch ? parseInt(totalMatch[1].replace(/,/g, ''), 10) : 0;
+        
+        const startOptionsIdx = respIdx + 1;
+        const endOptionsIdx = (k + 1 < questionStartIndices.length) ? questionStartIndices[k + 1] - 1 : lines.length;
+        
+        const optionLines = lines.slice(startOptionsIdx, endOptionsIdx);
+        const options = [];
+        const counts = [];
+        
+        let i = 0;
+        while (i < optionLines.length) {
+          const line = optionLines[i];
+          const pctMatch = line.match(pctRegex);
+          
+          if (pctMatch) {
+            const pctVal = parseFloat(pctMatch[1]);
+            const lineWithoutPct = line.replace(pctRegex, '');
+            const countMatch = lineWithoutPct.match(countRegex);
+            let count = 0;
+            if (countMatch) {
+              count = parseInt(countMatch[1].replace(/,/g, ''), 10);
+            } else {
+              count = Math.round((pctVal / 100) * totalResponses);
+            }
+            
+            let label = '';
+            const cleanLine = lineWithoutPct.replace(/[()\-/\s,]+/g, ' ').trim();
+            if (cleanLine.length > 2) {
+              label = cleanLine;
+            } else if (i > 0) {
+              label = optionLines[i - 1];
+            } else {
+              label = `Option ${options.length + 1}`;
+            }
+            
+            if (label && !options.includes(label)) {
+              options.push(label);
+              counts.push(count);
+            }
+            i++;
+          } else {
+            if (i + 1 < optionLines.length && pctRegex.test(optionLines[i + 1])) {
+              i++; // handled next run
+            } else {
+              const countOnlyMatch = line.match(countRegex);
+              if (countOnlyMatch && !/[a-zA-Z]/.test(line)) {
+                const count = parseInt(countOnlyMatch[1].replace(/,/g, ''), 10);
+                let label = i > 0 ? optionLines[i - 1] : `Option ${options.length + 1}`;
+                if (label && !options.includes(label)) {
+                  options.push(label);
+                  counts.push(count);
+                }
+              }
+              i++;
+            }
+          }
+        }
+        
+        if (options.length > 0) {
+          questions.push({
+            id: generateId(),
+            questionText: title,
+            totalResponses: totalResponses || counts.reduce((a, b) => a + b, 0),
+            options,
+            counts,
+            chartType: options.length > 8 ? 'bar_vertical' : 'pie',
+            visible: true
+          });
+        }
+      }
+      
+      if (questions.length === 0) {
+        // Fallback: simple label/value row reader (useful for clipboard text blocks)
+        const fallbackOptions = [];
+        const fallbackCounts = [];
+        lines.forEach(l => {
+          const match = l.match(/^([a-zA-Z0-9\s\-_]+)\t(\d+)$/) || l.match(/^([a-zA-Z0-9\s\-_]+)\s+(\d+)$/);
+          if (match) {
+            fallbackOptions.push(match[1].trim());
+            fallbackCounts.push(parseInt(match[2], 10));
+          }
+        });
+        
+        if (fallbackOptions.length > 0) {
+          questions.push({
+            id: generateId(),
+            questionText: sourceName ? sourceName.split('.')[0] : 'Clipboard Table Data',
+            totalResponses: fallbackCounts.reduce((a, b) => a + b, 0),
+            options: fallbackOptions,
+            counts: fallbackCounts,
+            chartType: fallbackOptions.length > 8 ? 'bar_vertical' : 'pie',
+            visible: true
+          });
+        }
+      }
+      
+      if (questions.length > 0) {
+        addParsedQuestions(questions);
+        showNotification(`Parsed ${questions.length} questions from text!`);
+      } else {
+        showError("Could not recognize Google Forms summary format. Verify layout format.");
+      }
+    }
+
+    // OCR ENGINE
+    async function runOCR(imageSrc) {
+      const loader = document.getElementById('ocr-loader');
+      loader.style.display = 'flex';
+      
+      try {
+        const worker = await Tesseract.createWorker('eng');
+        const ret = await worker.recognize(imageSrc);
+        await worker.terminate();
+        
+        const text = ret.data.text;
+        const confidence = ret.data.confidence;
+        
+        const questions = [];
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        
+        // Try scraping structure
+        const firstAttempt = parseSimpleBlockText(lines);
+        if (firstAttempt && firstAttempt.options.length > 0) {
+          questions.push(firstAttempt);
+        }
+        
+        if (questions.length > 0) {
+          if (confidence < 70) {
+            showOCRWarning(`OCR low confidence (${confidence}%). Please edit values manually.`);
+          } else {
+            showNotification(`OCR completed successfully! Confidence: ${confidence}%`);
+          }
+          addParsedQuestions(questions);
+        } else {
+          showError("OCR parsed no viable structured survey options. Empty dataset created.");
+          addEmptyQuestion();
+        }
+      } catch (err) {
+        showError(`OCR execution failed: ${err.message}`);
+      } finally {
+        loader.style.display = 'none';
+      }
+    }
+
+    function parseSimpleBlockText(lines) {
+      const options = [];
+      const counts = [];
+      lines.forEach(l => {
+        const match = l.match(/^([a-zA-Z\s]+)\s*(?:[-:\s\(\/])+\s*(\d+)(?:\s*%)?\)?$/);
+        if (match) {
+          options.push(match[1].trim());
+          counts.push(parseInt(match[2], 10));
+        }
+      });
+      if (options.length > 0) {
+        return {
+          id: generateId(),
+          questionText: 'Extracted OCR Data',
+          totalResponses: counts.reduce((a, b) => a + b, 0),
+          options,
+          counts,
+          chartType: options.length > 8 ? 'bar_vertical' : 'pie',
+          visible: true
+        };
+      }
+      return null;
+    }
+
+    // STATE OPERATIONS & DOM RENDERING
+
+    function generateId() {
+      return 'q_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function addParsedQuestions(questions) {
+      questions.forEach(q => {
+        const dupe = window.surveyState.find(orig => orig.questionText === q.questionText);
+        if (!dupe) {
+          window.surveyState.push(q);
+        }
+      });
+      renderEditor();
+      renderCharts();
+    }
+
+    function addEmptyQuestion() {
+      const empty = {
+        id: generateId(),
+        questionText: 'New Question',
+        totalResponses: 10,
+        options: ['Yes', 'No'],
+        counts: [7, 3],
+        chartType: 'pie',
+        visible: true
+      };
+      window.surveyState.push(empty);
+      renderEditor();
+      renderCharts();
+    }
+
+    // RENDER DATA EDITOR SIDEBAR
+    function renderEditor() {
+      const container = document.getElementById('data-editor-section');
+      container.innerHTML = '';
+      
+      if (window.surveyState.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.875rem; text-align: center; padding: 2rem 0;">No active survey data. Upload a file or load samples above to begin.</p>`;
+        return;
+      }
+      
+      window.surveyState.forEach((q, qIndex) => {
+        const itemBox = document.createElement('div');
+        itemBox.className = 'question-edit-box';
+        
+        let rowsHtml = '';
+        q.options.forEach((opt, oIndex) => {
+          rowsHtml += `
+            <tr>
+              <td>
+                <input type="text" value="${opt}" onchange="updateCell('${q.id}', 'options', ${oIndex}, this.value)">
+              </td>
+              <td>
+                <input type="number" min="0" value="${q.counts[oIndex]}" onchange="updateCell('${q.id}', 'counts', ${oIndex}, parseInt(this.value, 10))">
+              </td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn btn-secondary btn-icon" style="width:24px; height:24px; font-size:0.7rem;" onclick="deleteOption('${q.id}', ${oIndex})" title="Delete Option">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+        
+        itemBox.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.5rem; gap: 0.5rem;">
+            <input type="text" value="${q.questionText}" style="font-weight:700; border:none; background:transparent; font-size:0.95rem; width:100%; border-bottom:1px solid transparent; color: var(--text-primary);" onchange="updateQuestionText('${q.id}', this.value)" onfocus="this.style.borderBottomColor='var(--accent)'" onblur="this.style.borderBottomColor='transparent'">
+            <div style="display:flex; gap:0.25rem; flex-shrink:0;">
+              <button class="btn btn-secondary btn-icon" style="width:26px; height:26px;" onclick="moveQuestion('${qIndex}', -1)" title="Move Up"><i class="fa-solid fa-arrow-up" style="font-size:0.75rem;"></i></button>
+              <button class="btn btn-secondary btn-icon" style="width:26px; height:26px;" onclick="moveQuestion('${qIndex}', 1)" title="Move Down"><i class="fa-solid fa-arrow-down" style="font-size:0.75rem;"></i></button>
+              <button class="btn btn-secondary btn-icon" style="width:26px; height:26px; color:#ef4444;" onclick="deleteQuestion('${q.id}')" title="Delete Question"><i class="fa-solid fa-trash" style="font-size:0.75rem;"></i></button>
+            </div>
+          </div>
+          <table class="edit-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th style="width: 80px;">Count</th>
+                <th style="width: 40px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.75rem;">
+            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="addOption('${q.id}')">
+              <i class="fa-solid fa-plus"></i> Add Row
+            </button>
+            <label style="font-size:0.75rem; display:flex; align-items:center; gap:0.25rem; cursor:pointer;">
+              <input type="checkbox" ${q.visible ? 'checked' : ''} onchange="toggleVisibility('${q.id}', this.checked)"> Active
+            </label>
+          </div>
+        `;
+        
+        container.appendChild(itemBox);
+      });
+    }
+
+    // UPDATE STATE FUNCTIONS
+    function updateCell(qId, field, index, val) {
+      const q = window.surveyState.find(item => item.id === qId);
+      if (!q) return;
+      
+      if (field === 'options') {
+        q.options[index] = val;
+      } else if (field === 'counts') {
+        q.counts[index] = isNaN(val) ? 0 : val;
+        q.totalResponses = q.counts.reduce((sum, v) => sum + v, 0);
+      }
+      
+      renderCharts();
+    }
+
+    function updateQuestionText(qId, val) {
+      const q = window.surveyState.find(item => item.id === qId);
+      if (q) {
+        q.questionText = val;
+        renderCharts();
+      }
+    }
+
+    function addOption(qId) {
+      const q = window.surveyState.find(item => item.id === qId);
+      if (q) {
+        q.options.push(`New Option`);
+        q.counts.push(1);
+        q.totalResponses = q.counts.reduce((sum, v) => sum + v, 0);
+        renderEditor();
+        renderCharts();
+      }
+    }
+
+    function deleteOption(qId, index) {
+      const q = window.surveyState.find(item => item.id === qId);
+      if (q && q.options.length > 1) {
+        q.options.splice(index, 1);
+        q.counts.splice(index, 1);
+        q.totalResponses = q.counts.reduce((sum, v) => sum + v, 0);
+        renderEditor();
+        renderCharts();
+      }
+    }
+
+    function deleteQuestion(qId) {
+      window.surveyState = window.surveyState.filter(item => item.id !== qId);
+      if (activeCharts[qId]) {
+        activeCharts[qId].destroy();
+        delete activeCharts[qId];
+      }
+      renderEditor();
+      renderCharts();
+    }
+
+    function toggleVisibility(qId, isVisible) {
+      const q = window.surveyState.find(item => item.id === qId);
+      if (q) {
+        q.visible = isVisible;
+        renderCharts();
+      }
+    }
+
+    function moveQuestion(indexStr, direction) {
+      const index = parseInt(indexStr, 10);
+      const newIndex = index + direction;
+      
+      if (newIndex >= 0 && newIndex < window.surveyState.length) {
+        const temp = window.surveyState[index];
+        window.surveyState[index] = window.surveyState[newIndex];
+        window.surveyState[newIndex] = temp;
+        renderEditor();
+        renderCharts();
+      }
+    }
+
+    // SUGGEST BEST CHART TYPE
+    function suggestChartType(q) {
+      if (q.options.length > 8) return 'bar_vertical';
+      
+      const likertTerms = ['agree', 'disagree', 'neutral', 'satisfied', 'poor', 'excellent', 'yes', 'no'];
+      const text = q.options.join(' ').toLowerCase();
+      const isLikert = likertTerms.some(term => text.includes(term));
+      if (isLikert && q.options.length > 3) {
+        return 'stacked_bar';
+      }
+      
+      if (isSequential(q.options)) {
+        return 'line';
+      }
+      
+      return 'pie';
+    }
+
+    function isSequential(labels) {
+      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      const quarters = ['q1', 'q2', 'q3', 'q4'];
+      const text = labels.join(' ').toLowerCase();
+      
+      const hasMonths = months.some(m => text.includes(m));
+      if (hasMonths) return true;
+      
+      const hasQuarters = quarters.some(q => text.includes(q));
+      if (hasQuarters) return true;
+      
+      let numbersOnly = true;
+      labels.forEach(l => {
+        if (isNaN(l.replace(/[^\d]/g, ''))) numbersOnly = false;
+      });
+      if (numbersOnly && labels.length > 3) return true;
+      
+      return false;
+    }
+
+    // DRAW CHARTS GRID
+    function renderCharts() {
+      const grid = document.getElementById('dashboard-charts-grid');
+      const visibleQs = window.surveyState.filter(q => q.visible);
+      
+      if (visibleQs.length === 0) {
+        grid.innerHTML = `
+          <div class="card" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; text-align: center;">
+            <i class="fa-solid fa-chart-line" style="font-size: 4rem; color: var(--border); margin-bottom: 1rem;"></i>
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; margin-bottom: 0.5rem;">Awaiting Survey Data</h3>
+            <p style="color: var(--text-secondary); max-width: 400px; font-size: 0.875rem;">Once data is uploaded and parsed, high-contrast monochrome charts will generate dynamically here.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      grid.innerHTML = '';
+      
+      visibleQs.forEach(q => {
+        const card = document.createElement('div');
+        card.className = 'chart-card';
+        card.dataset.id = q.id;
+        
+        const currentType = q.chartType || suggestChartType(q);
+        
+        if (!q.chartType) q.chartType = currentType;
+        
+        card.innerHTML = `
+          <div class="chart-card-header">
+            <div>
+              <h3 class="chart-card-title">${q.questionText}</h3>
+              <p class="chart-card-subtitle">Sample Size: N = ${q.totalResponses} respondents</p>
+            </div>
+          </div>
+          
+          <div class="chart-canvas-container">
+            <canvas id="canvas_${q.id}" aria-label="Survey Chart for: ${q.questionText}"></canvas>
+          </div>
+          
+          <div class="chart-legend" id="legend_${q.id}"></div>
+          
+          <div class="chart-toolbar">
+            <select onchange="changeChartType('${q.id}', this.value)">
+              <option value="pie" ${currentType === 'pie' ? 'selected' : ''}>Pie Chart</option>
+              <option value="donut" ${currentType === 'donut' ? 'selected' : ''}>Donut Chart</option>
+              <option value="bar_vertical" ${currentType === 'bar_vertical' ? 'selected' : ''}>Vertical Bar</option>
+              <option value="bar_horizontal" ${currentType === 'bar_horizontal' ? 'selected' : ''}>Horizontal Bar</option>
+              <option value="stacked_bar" ${currentType === 'stacked_bar' ? 'selected' : ''}>Stacked Bar</option>
+              <option value="line" ${currentType === 'line' ? 'selected' : ''}>Line Graph</option>
+            </select>
+            
+            <div class="toolbar-buttons">
+              <button class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.75rem;" onclick="downloadSinglePNG('${q.id}')">
+                <i class="fa-solid fa-file-image"></i> Export
+              </button>
+            </div>
+          </div>
+        `;
+        
+        grid.appendChild(card);
+        buildChartCanvas(q);
+      });
+      
+      paintLegendSwatches();
+    }
+
+    function changeChartType(qId, val) {
+      const q = window.surveyState.find(item => item.id === qId);
+      if (q) {
+        q.chartType = val;
+        renderCharts();
+      }
+    }
+
+    // DRAW SPECIFIC CANVAS CHART
+    function buildChartCanvas(q) {
+      const ctx = document.getElementById(`canvas_${q.id}`).getContext('2d');
+      const chartType = q.chartType || 'pie';
+      
+      if (activeCharts[q.id]) {
+        activeCharts[q.id].destroy();
+      }
+      
+      const count = q.options.length;
+      const backgrounds = [];
+      const activeColorPalette = grayscaleActive ? grayColors : colors;
+      
+      for (let i = 0; i < count; i++) {
+        const col = activeColorPalette[i % activeColorPalette.length];
+        const patName = patterns[i % patterns.length];
+        backgrounds.push(getPattern(patName, i, col));
+      }
+      
+      const total = q.counts.reduce((sum, v) => sum + v, 0);
+      const globalLabelType = document.getElementById('global-label-type').value;
+      
+      let config = {};
+      
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        }
+      };
+      
+      if (chartType === 'pie' || chartType === 'donut') {
+        config = {
+          type: chartType === 'donut' ? 'doughnut' : 'pie',
+          data: {
+            labels: q.options,
+            datasets: [{
+              data: q.counts,
+              backgroundColor: backgrounds,
+              borderColor: '#111111',
+              borderWidth: 1.5
+            }]
+          },
+          options: {
+            ...commonOptions,
+            layout: {
+              padding: {
+                left: 80,
+                right: 80,
+                top: 25,
+                bottom: 25
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              grayscaleLeaderLines: {
+                showType: globalLabelType
+              }
+            }
+          }
+        };
+      } else if (chartType === 'bar_vertical' || chartType === 'bar_horizontal') {
+        const isHorizontal = chartType === 'bar_horizontal';
+        
+        config = {
+          type: 'bar',
+          data: {
+            labels: q.options,
+            datasets: [{
+              data: q.counts,
+              backgroundColor: backgrounds,
+              borderColor: '#111111',
+              borderWidth: 1.5
+            }]
+          },
+          options: {
+            ...commonOptions,
+            indexAxis: isHorizontal ? 'y' : 'x',
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: { color: '#0f172a' }
+              },
+              y: {
+                grid: { color: '#f1f5f9' },
+                ticks: { color: '#0f172a' }
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              barLabels: {
+                showType: globalLabelType
+              }
+            }
+          }
+        };
+      } else if (chartType === 'stacked_bar') {
+        const datasetArr = q.options.map((opt, i) => {
+          const col = activeColorPalette[i % activeColorPalette.length];
+          const patName = patterns[i % patterns.length];
+          return {
+            label: opt,
+            data: [q.counts[i]],
+            backgroundColor: getPattern(patName, i, col),
+            borderColor: '#111111',
+            borderWidth: 1.5
+          };
+        });
+        
+        config = {
+          type: 'bar',
+          data: {
+            labels: ['Responses'],
+            datasets: datasetArr
+          },
+          options: {
+            ...commonOptions,
+            indexAxis: 'y',
+            scales: {
+              x: { stacked: true, grid: { display: false } },
+              y: { stacked: true, grid: { display: false } }
+            }
+          }
+        };
+      } else if (chartType === 'line') {
+        config = {
+          type: 'line',
+          data: {
+            labels: q.options,
+            datasets: [{
+              data: q.counts,
+              borderColor: '#0f172a',
+              borderWidth: 3,
+              pointBackgroundColor: backgrounds[0],
+              pointBorderColor: '#0f172a',
+              pointRadius: 6,
+              pointHoverRadius: 8,
+              fill: false
+            }]
+          },
+          options: {
+            ...commonOptions,
+            scales: {
+              x: { grid: { display: false } },
+              y: { grid: { color: '#f1f5f9' } }
+            }
+          }
+        };
+      }
+      
+      activeCharts[q.id] = new Chart(ctx, config);
+      
+      const legendBox = document.getElementById(`legend_${q.id}`);
+      legendBox.innerHTML = '';
+      
+      q.options.forEach((opt, idx) => {
+        const col = activeColorPalette[idx % activeColorPalette.length];
+        const patName = patterns[idx % patterns.length];
+        const val = q.counts[idx];
+        const pct = total > 0 ? ((val / total) * 100).toFixed(1) + '%' : '0%';
+        
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `
+          <canvas class="legend-swatch" data-pattern="${patName}" data-color="${col}"></canvas>
+          <span>${opt}: ${val} (${pct})</span>
+        `;
+        legendBox.appendChild(item);
+      });
+    }
+
+    function paintLegendSwatches() {
+      document.querySelectorAll('.legend-swatch').forEach(sw => {
+        const ctx = sw.getContext('2d');
+        const pat = sw.dataset.pattern;
+        const col = sw.dataset.color;
+        
+        sw.width = 16;
+        sw.height = 16;
+        
+        ctx.fillStyle = getPattern(pat, 0, col);
+        ctx.fillRect(0, 0, 16, 16);
+        ctx.strokeStyle = '#111111';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0, 0, 16, 16);
+      });
+    }
+
+    // EXPORTS ENGINE (PNG, 2X DPI RASTERIZATION)
+
+    async function downloadSinglePNG(qId) {
+      const q = window.surveyState.find(item => item.id === qId);
+      if (!q) return;
+      
+      const card = document.querySelector(`.chart-card[data-id="${qId}"]`);
+      const toolbar = card.querySelector('.chart-toolbar');
+      toolbar.classList.add('hidden');
+      
+      try {
+        const canvas = await html2canvas(card, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+        
+        const link = document.createElement('a');
+        const slug = q.questionText.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 30);
+        link.download = `${slug}_${q.chartType || 'pie'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showNotification("PNG exported successfully!");
+      } catch (err) {
+        showError("Failed to export chart.");
+      } finally {
+        toolbar.classList.remove('hidden');
+      }
+    }
+
+    async function downloadAllPNGs() {
+      const visibleQs = window.surveyState.filter(q => q.visible);
+      if (visibleQs.length === 0) return;
+      
+      const loader = document.getElementById('ocr-loader');
+      loader.querySelector('h3').textContent = 'Generating PNG Package...';
+      loader.style.display = 'flex';
+      
+      try {
+        const grid = document.getElementById('dashboard-charts-grid');
+        document.querySelectorAll('.chart-toolbar').forEach(tb => tb.classList.add('hidden'));
+        
+        const canvas = await html2canvas(grid, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+        
+        const link = document.createElement('a');
+        const dateStr = new Date().toISOString().split('T')[0];
+        link.download = `survey_charts_full_${dateStr}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        showNotification("All charts combined exported!");
+      } catch (err) {
+        showError("Failed exporting full dashboard.");
+      } finally {
+        document.querySelectorAll('.chart-toolbar').forEach(tb => tb.classList.remove('hidden'));
+        loader.style.display = 'none';
+        loader.querySelector('h3').textContent = 'Running Optical Character Recognition (OCR)...';
+      }
+    }
+
+    // UPLOAD STATE HANDLERS (DROPZONE, INPUTS, CLIPBOARD)
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) handleFile(files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    // Paste handler (Ctrl+V)
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            runOCR(event.target.result);
+          };
+          reader.readAsDataURL(blob);
+          showNotification("Image pasted from clipboard. Running OCR...");
+          return;
+        }
+      }
+      
+      const pastedText = e.clipboardData.getData('text');
+      if (pastedText.trim().length > 0) {
+        processParsedText(pastedText, 'pasted_clipboard_text');
+      }
+    });
+
+    // MOCK DATA TESTING
+    document.getElementById('sample-csv-btn').addEventListener('click', () => {
+      const csvMock = `Question,Yes,No,Maybe\n"Would you recommend our tool to a colleague?",65,15,20\n"Was the setup process easy?",80,12,8\n"Do you prefer print layouts?",45,35,20`;
+      Papa.parse(csvMock, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          processTabularData(results.data, "sample_survey_data.csv");
+        }
+      });
+    });
+
+    document.getElementById('sample-forms-btn').addEventListener('click', () => {
+      const formsMock = `
+        What is your favorite design element?
+        120 responses
+        Canvas Patterns
+        60 / 50%
+        Leader Lines
+        40 / 33.3%
+        Grayscale mode
+        20 / 16.7%
+        
+        How often do you print reports?
+        85 responses
+        Daily
+        15 / 17.6%
+        Weekly
+        30 / 35.3%
+        Monthly
+        35 / 41.2%
+        Never
+        5 / 5.9%
+      `;
+      processParsedText(formsMock, "sample_google_forms_summary.txt");
+    });
+
+    document.getElementById('sample-ocr-btn').addEventListener('click', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 300;
+      const ctx = canvas.getContext('2d');
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 400, 300);
+      
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText('Survey Output Options', 20, 40);
+      
+      ctx.font = '16px sans-serif';
+      ctx.fillText('Excellent - 65 %', 40, 100);
+      ctx.fillText('Good - 25 %', 40, 140);
+      ctx.fillText('Unsatisfactory - 10 %', 40, 180);
+      
+      const imageURL = canvas.toDataURL('image/png');
+      runOCR(imageURL);
+    });
+
+    // GLOBAL DASHBOARD ACTIONS
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const html = document.documentElement;
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      const icon = document.getElementById('theme-toggle').querySelector('i');
+      icon.className = isDark ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+    });
+
+    document.getElementById('grayscale-toggle').addEventListener('click', () => {
+      grayscaleActive = !grayscaleActive;
+      const btn = document.getElementById('grayscale-toggle');
+      if (grayscaleActive) {
+        document.body.classList.add('grayscale-mode');
+        btn.style.backgroundColor = 'var(--text-primary)';
+        btn.style.color = 'var(--bg-card)';
+      } else {
+        document.body.classList.remove('grayscale-mode');
+        btn.style.backgroundColor = 'transparent';
+        btn.style.color = 'var(--text-primary)';
+      }
+      renderCharts();
+    });
+
+    document.getElementById('global-label-type').addEventListener('change', () => {
+      renderCharts();
+    });
+
+    document.getElementById('download-all-btn').addEventListener('click', () => {
+      downloadAllPNGs();
+    });
+
+    document.getElementById('add-question-btn').addEventListener('click', () => {
+      addEmptyQuestion();
+    });
+
+    // TOAST NOTIFICATIONS
+    function showNotification(msg) {
+      const toast = document.getElementById('notification');
+      toast.textContent = msg;
+      toast.style.backgroundColor = '#10b981';
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    function showError(msg) {
+      const toast = document.getElementById('notification');
+      toast.textContent = msg;
+      toast.style.backgroundColor = '#ef4444';
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    }
+
+    function showOCRWarning(msg) {
+      const box = document.getElementById('ocr-warning-box');
+      box.textContent = msg;
+      box.style.display = 'block';
+      setTimeout(() => { box.style.display = 'none'; }, 8000);
+    }
+  </script>
+</body>
+</html>
