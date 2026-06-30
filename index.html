@@ -1893,7 +1893,9 @@
       
       const card = document.querySelector(`.chart-card[data-id="${qId}"]`);
       const toolbar = card.querySelector('.chart-toolbar');
+      const subtitle = card.querySelector('.chart-card-subtitle');
       toolbar.classList.add('hidden');
+      if (subtitle) subtitle.classList.add('hidden');
       
       try {
         const canvas = await html2canvas(card, {
@@ -1912,6 +1914,7 @@
         showError("Failed to export chart.");
       } finally {
         toolbar.classList.remove('hidden');
+        if (subtitle) subtitle.classList.remove('hidden');
       }
     }
 
@@ -1926,6 +1929,7 @@
       try {
         const grid = document.getElementById('dashboard-charts-grid');
         document.querySelectorAll('.chart-toolbar').forEach(tb => tb.classList.add('hidden'));
+        document.querySelectorAll('.chart-card-subtitle').forEach(sb => sb.classList.add('hidden'));
         
         const canvas = await html2canvas(grid, {
           scale: 2,
@@ -1944,6 +1948,7 @@
         showError("Failed exporting full dashboard.");
       } finally {
         document.querySelectorAll('.chart-toolbar').forEach(tb => tb.classList.remove('hidden'));
+        document.querySelectorAll('.chart-card-subtitle').forEach(sb => sb.classList.remove('hidden'));
         loader.style.display = 'none';
         loader.querySelector('h3').textContent = 'Running Optical Character Recognition (OCR)...';
       }
